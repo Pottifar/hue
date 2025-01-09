@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Philips Hue Control</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container my-3">
+        <h1 class="text-center mb-4">Philips Hue Control</h1>
+
+        <!-- Rooms and Lights -->
+        {% for room_name, lights in room_lights.items() %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white text-center">
+                    <h5 class="mb-0">{{ room_name }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for light_name, status in lights.items() %}
+                            <!-- Sanitize IDs -->
+                            {% set sanitized_light_name = light_name.replace(' ', '_') %}
+                            <div class="col-12 col-md-6 col-lg-4 mb-3">
+                                <div class="card light" id="{{ sanitized_light_name }}-card" style="background-color: rgb{{ status.rgb }};">
+                                    <div class="card-body text-white text-center">
+                                        <h6 class="card-title">{{ light_name }}</h6>
+                                        <p id="{{ sanitized_light_name }}-status">Status: {{ 'On' if status.on else 'Off' }}</p>
+                                        <p id="{{ sanitized_light_name }}-rgb">RGB: {{ status.rgb }}</p>
+                                        <button 
+                                            class="btn btn-dark toggle-light" 
+                                            data-room="{{ room_name }}" 
+                                            data-light="{{ light_name }}"
+                                            id="{{ sanitized_light_name }}-button">
+                                            {{ 'Turn Off' if status.on else 'Turn On' }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery for AJAX -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            console.log("DOM fully loaded. Starting script."); // Debugging start point
+
+            // Toggle Light
+            $(".toggle-light").click(function() {
+                const button = $(this);
+                const roomName = button.data("room");
+                const lightName = button.data("light");
+                const sanitizedLightName = lightName.replace(/ /g, '_'); // Match sanitized IDs
+
+                console.log(`Toggling light: ${lightName} in room: ${roomName}`); // Debug log
+
+                // Send AJAX request to toggle the light
+                $.ajax({
+                    url: "/toggle-light",
+                    type: "POST",
+                    data: JSON.stringify({ room_name: roomName, light_name: lightName }),
+                    contentType: "application/json",
+                    success: function(response) {
+                        console.log(`Light toggled successfully: ${lightName}`, response); // Debug log
+
+                        const newState = response.new_state;
+                        const newRGB = response.new_rgb;
+
+                        // Update DOM elements
+                        $(`#${sanitizedLightName}-status`).text(`Status: ${newState ? 'On' : 'Off'}`);
+                        $(`#${sanitizedLightName}-rgb`).text(`RGB: (${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`);
+                        button.text(newState ? 'Turn Off' : 'Turn On');
+                        $(`#${sanitizedLightName}-card`).css('background-color', `rgb(${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`);
+                    },
+                    error: function(error) {
+                        console.error(`Failed to toggle light: ${lightName}`, error); // Debug log
+                        alert("Failed to toggle the light. Please try again.");
+                    }
+                });
+            });
+
+            // Poll for Updates
+            function pollLights() {
+                console.log("Polling for light updates..."); // Debug log
+
+                $.ajax({
+                    url: "/get-lights",
+                    type: "GET",
+                    success: function(response) {
+                        console.log("Lights data received:", response); // Debug log
+
+                        response.lights.forEach(light => {
+                            const lightName = light.name;
+                            const sanitizedLightName = lightName.replace(/ /g, '_'); // Match sanitized IDs
+                            const newState = light.state.on;
+                            const newRGB = light.rgb;
+
+                            console.log(`Updating light: ${lightName}, State: ${newState}, RGB: ${newRGB}`); // Debug log
+
+                            // Update DOM elements
+                            const statusElement = $(`#${sanitizedLightName}-status`);
+                            const rgbElement = $(`#${sanitizedLightName}-rgb`);
+                            const buttonElement = $(`#${sanitizedLightName}-button`);
+                            const cardElement = $(`#${sanitizedLightName}-card`);
+
+                            // Debug: Ensure elements exist
+                            console.log(`Elements for ${lightName}:`, {
+                                status: statusElement.length,
+                                rgb: rgbElement.length,
+                                button: buttonElement.length,
+                                card: cardElement.length
+                            });
+
+                            if (statusElement.length) {
+                                statusElement.text(`Status: ${newState ? 'On' : 'Off'}`);
+                            }
+
+                            if (rgbElement.length) {
+                                rgbElement.text(`RGB: (${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`);
+                            }
+
+                            if (buttonElement.length) {
+                                buttonElement.text(newState ? 'Turn Off' : 'Turn On');
+                            }
+
+                            if (cardElement.length) {
+                                cardElement.css('background-color', `rgb(${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`);
+                            }
+                        });
+                    },
+                    error: function(error) {
+                        console.error("Failed to poll lights:", error); // Debug log
+                    },
+                    complete: function() {
+                        console.log("Poll complete. Scheduling next poll."); // Debug log
+                        setTimeout(pollLights, 2000); // Schedule the next poll
+                    }
+                });
+            }
+
+            pollLights(); // Start polling
+        });
+    </script>
+</body>
+</html>
