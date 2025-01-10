@@ -1,105 +1,18 @@
-/* General Styling */
-body {
-    background-color: #f8f9fa;
-    font-family: Arial, sans-serif;
-    padding: 10px;
-    margin: 0;
-}
-
-/* Container Styling */
-.container {
-    max-width: 100%; /* Ensure it uses the full screen width */
-    padding: 10px;
-}
-
-/* Card Styling */
-.card {
-    border: none;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 15px;
-    border-radius: 8px; /* Slightly rounded corners */
-}
-
-/* Light Cards */
-.light {
-    color: white;
-    text-align: center;
-    height: 150px; /* Make the cards smaller */
-    overflow: hidden; /* Avoid overflow */
-}
-
-.light .card-body {
-    padding: 5px; /* Reduce padding */
-}
-
-.light button {
-    font-size: 10px;
-    padding: 5px 10px;
-    width: 80%; /* Smaller buttons */
-    margin: 0 auto; /* Center buttons */
-    border-radius: 5px;
-}
-
-/* Card Header */
 .card-header {
-    font-size: 0.9rem;
-    font-weight: bold;
-    text-align: center;
-    background-color: #007bff;
+    background: linear-gradient(45deg, #007bff, #0056b3); /* Gradient background for a modern look */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.card-header .btn {
+    border-radius: 20px; /* Rounded button */
+    transition: all 0.3s ease; /* Smooth hover effect */
+}
+
+.card-header .btn:hover {
+    background-color: #ff4d4d; /* Hover effect for button */
     color: white;
-    padding: 5px;
-    border-radius: 8px 8px 0 0;
 }
 
-/* Grid Layout */
-.row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px; /* Add spacing between cards */
-}
-
-.col-12.col-md-6.col-lg-4 {
-    flex: 0 0 calc(33.333% - 10px); /* Three cards per row on larger screens */
-    max-width: calc(33.333% - 10px);
-    margin: 0; /* Remove default margins */
-}
-
-@media (max-width: 768px) {
-    .col-12.col-md-6.col-lg-4 {
-        flex: 0 0 calc(50% - 10px); /* Two cards per row on tablets */
-        max-width: calc(50% - 10px);
-    }
-
-    .light {
-        height: 120px; /* Adjust card height for smaller screens */
-    }
-
-    .light button {
-        font-size: 9px;
-        padding: 4px 8px;
-    }
-
-    .card-header {
-        font-size: 0.8rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .col-12.col-md-6.col-lg-4 {
-        flex: 0 0 calc(100% - 10px); /* One card per row on small screens */
-        max-width: calc(100% - 10px);
-    }
-
-    .light {
-        height: 100px; /* Further adjust card height */
-    }
-
-    .light button {
-        font-size: 8px;
-        padding: 3px 6px;
-    }
-
-    .card-header {
-        font-size: 0.7rem;
-    }
+.card-header h5 {
+    letter-spacing: 1px; /* Slight spacing for a polished look */
 }
