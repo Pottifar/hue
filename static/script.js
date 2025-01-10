@@ -122,4 +122,27 @@ $(document).ready(function () {
     }
 
     setInterval(updateLightStatuses, 2000);
+
+    // Handle room brightness slider
+    $(".room-brightness-slider").on("change", function () {
+        const slider = $(this);
+        const roomName = slider.data("room");
+        const brightness = slider.val();
+
+        console.log(`Setting brightness for room: ${roomName}, Value: ${brightness}`);
+
+        $.ajax({
+            url: "/set-room-brightness",
+            type: "POST",
+            data: JSON.stringify({ room_name: roomName, brightness: parseInt(brightness) }),
+            contentType: "application/json",
+            success: function (response) {
+                console.log(`Brightness set successfully for room: ${roomName}`, response);
+            },
+            error: function (error) {
+                console.error(`Failed to set brightness for room: ${roomName}`, error);
+                alert("Failed to set brightness. Please try again.");
+            }
+        });
+    });
 });

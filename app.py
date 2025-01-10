@@ -108,5 +108,24 @@ def get_lights():
             lights_data.append({"name": name, "state": state, "rgb": rgb})
     return jsonify({"lights": lights_data})
 
+@app.route("/set-room-brightness", methods=["POST"])
+def set_room_brightness():
+    data = request.get_json()
+    room_name = data.get("room_name")
+    brightness = data.get("brightness")
+
+    if brightness is None or not (1 <= brightness <= 254):
+        return jsonify({"error": "Invalid brightness value"}), 400
+
+    groups = b.get_group()
+    for group in groups.values():
+        if group["name"] == room_name:
+            for light_id in group["lights"]:
+                b.set_light(int(light_id), "bri", brightness)
+
+            return jsonify({"success": True, "brightness": brightness})
+
+    return jsonify({"error": "Room not found"}), 404
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
