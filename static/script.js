@@ -145,4 +145,27 @@ $(document).ready(function () {
             }
         });
     });
+
+    $(".room-temp-slider").on("change", function () {
+        const slider = $(this);
+        const roomName = slider.data("room");
+        const temperature = slider.val();
+    
+        console.log(`Setting color temperature for room: ${roomName}, Value: ${temperature}`);
+    
+        $.ajax({
+            url: "/set-room-temp",
+            type: "POST",
+            data: JSON.stringify({ room_name: roomName, temperature: parseInt(temperature) }),
+            contentType: "application/json",
+            success: function (response) {
+                console.log(`Temperature set successfully for room: ${roomName}`, response);
+            },
+            error: function (error) {
+                console.error(`Failed to set temperature for room: ${roomName}`, error);
+                alert("Failed to set temperature. Please try again.");
+            }
+        });
+    });
+    
 });

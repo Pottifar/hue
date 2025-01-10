@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, jsonify
+import os
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from phue import Bridge
 from color_convert import convert_color
 
@@ -126,6 +127,29 @@ def set_room_brightness():
             return jsonify({"success": True, "brightness": brightness})
 
     return jsonify({"error": "Room not found"}), 404
+
+@app.route("/set-room-temp", methods=["POST"])
+def set_room_temp():
+    data = request.get_json()
+    room_name = data.get("room_name")
+    temperature = data.get("temperature")
+
+    if temperature is None or not (153 <= temperature <= 500):
+        return jsonify({"error": "Invalid temperature value"}), 400
+
+    groups = b.get_group()
+    for group in groups.values():
+        if group["name"] == room_name:
+            for light_id in group["lights"]:
+                b.set_light(int(light_id), "ct", temperature)
+
+            return jsonify({"success": True, "temperature": temperature})
+
+    return jsonify({"error": "Room not found"}), 404
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
