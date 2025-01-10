@@ -16,18 +16,23 @@
         <!-- Rooms and Lights -->
         {% for room_name, lights in room_lights.items() %}
             <div class="card mb-4">
-                <div class="card-header bg-primary text-white text-center">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{{ room_name }}</h5>
+                    <button 
+                        class="btn btn-danger btn-sm toggle-room-lights" 
+                        data-room="{{ room_name }}"
+                        id="{{ room_name|replace(' ', '_') }}-toggle-lights">
+                        Toggle Lights
+                    </button>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         {% for light_name, status in lights.items() %}
-                            <!-- Sanitize IDs -->
                             {% set sanitized_light_name = light_name.replace(' ', '_') %}
                             <div class="col-12 col-md-6 col-lg-4 mb-3">
                                 <div class="card light" id="{{ sanitized_light_name }}-card" style="background-color: rgb{{ status.rgb }};">
                                     <div class="card-body text-white text-center">
-                                        <h6 class="card-title">{{ light_name }}</h6>
+                                        <h4 class="card-title">{{ light_name }}</h4>
                                         <p id="{{ sanitized_light_name }}-status">Status: {{ 'On' if status.on else 'Off' }}</p>
                                         <p id="{{ sanitized_light_name }}-rgb">RGB: {{ status.rgb }}</p>
                                         <button 
@@ -53,16 +58,16 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
-            console.log("DOM fully loaded. Starting script."); // Debugging start point
+            console.log("DOM fully loaded. Starting script.");
 
             // Toggle Light
             $(".toggle-light").click(function() {
                 const button = $(this);
                 const roomName = button.data("room");
                 const lightName = button.data("light");
-                const sanitizedLightName = lightName.replace(/ /g, '_'); // Match sanitized IDs
+                const sanitizedLightName = lightName.replace(/ /g, '_');
 
-                console.log(`Toggling light: ${lightName} in room: ${roomName}`); // Debug log
+                console.log(`Toggling light: ${lightName} in room: ${roomName}`);
 
                 // Send AJAX request to toggle the light
                 $.ajax({
@@ -71,7 +76,7 @@
                     data: JSON.stringify({ room_name: roomName, light_name: lightName }),
                     contentType: "application/json",
                     success: function(response) {
-                        console.log(`Light toggled successfully: ${lightName}`, response); // Debug log
+                        console.log(`Light toggled successfully: ${lightName}`, response);
 
                         const newState = response.new_state;
                         const newRGB = response.new_rgb;
@@ -83,72 +88,45 @@
                         $(`#${sanitizedLightName}-card`).css('background-color', `rgb(${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`);
                     },
                     error: function(error) {
-                        console.error(`Failed to toggle light: ${lightName}`, error); // Debug log
+                        console.error(`Failed to toggle light: ${lightName}`, error);
                         alert("Failed to toggle the light. Please try again.");
                     }
                 });
             });
 
-            // Poll for Updates
-            function pollLights() {
-                console.log("Polling for light updates..."); // Debug log
+            // Toggle All Lights in a Room
+            $(".toggle-room-lights").click(function() {
+                const button = $(this);
+                const roomName = button.data("room");
+                console.log(`Toggling all lights in room: ${roomName}`);
 
+                // Send AJAX request to toggle all lights
                 $.ajax({
-                    url: "/get-lights",
-                    type: "GET",
+                    url: "/toggle-room-lights",
+                    type: "POST",
+                    data: JSON.stringify({ room_name: roomName }),
+                    contentType: "application/json",
                     success: function(response) {
-                        console.log("Lights data received:", response); // Debug log
+                        console.log(`All lights toggled in room: ${roomName}`, response);
 
-                        response.lights.forEach(light => {
-                            const lightName = light.name;
-                            const sanitizedLightName = lightName.replace(/ /g, '_'); // Match sanitized IDs
+                        // Update DOM for each light in the room
+                        response.lights_updated.forEach(light => {
+                            const sanitizedLightName = light.name.replace(/ /g, '_');
                             const newState = light.state.on;
                             const newRGB = light.rgb;
 
-                            console.log(`Updating light: ${lightName}, State: ${newState}, RGB: ${newRGB}`); // Debug log
-
-                            // Update DOM elements
-                            const statusElement = $(`#${sanitizedLightName}-status`);
-                            const rgbElement = $(`#${sanitizedLightName}-rgb`);
-                            const buttonElement = $(`#${sanitizedLightName}-button`);
-                            const cardElement = $(`#${sanitizedLightName}-card`);
-
-                            // Debug: Ensure elements exist
-                            console.log(`Elements for ${lightName}:`, {
-                                status: statusElement.length,
-                                rgb: rgbElement.length,
-                                button: buttonElement.length,
-                                card: cardElement.length
-                            });
-
-                            if (statusElement.length) {
-                                statusElement.text(`Status: ${newState ? 'On' : 'Off'}`);
-                            }
-
-                            if (rgbElement.length) {
-                                rgbElement.text(`RGB: (${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`);
-                            }
-
-                            if (buttonElement.length) {
-                                buttonElement.text(newState ? 'Turn Off' : 'Turn On');
-                            }
-
-                            if (cardElement.length) {
-                                cardElement.css('background-color', `rgb(${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`);
-                            }
+                            $(`#${sanitizedLightName}-status`).text(`Status: ${newState ? 'On' : 'Off'}`);
+                            $(`#${sanitizedLightName}-rgb`).text(`RGB: (${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`);
+                            $(`#${sanitizedLightName}-button`).text(newState ? 'Turn Off' : 'Turn On');
+                            $(`#${sanitizedLightName}-card`).css("background-color", `rgb(${newRGB[0]}, ${newRGB[1]}, ${newRGB[2]})`);
                         });
                     },
                     error: function(error) {
-                        console.error("Failed to poll lights:", error); // Debug log
-                    },
-                    complete: function() {
-                        console.log("Poll complete. Scheduling next poll."); // Debug log
-                        setTimeout(pollLights, 2000); // Schedule the next poll
+                        console.error(`Failed to toggle all lights in room: ${roomName}`, error);
+                        alert("Failed to toggle all lights. Please try again.");
                     }
                 });
-            }
-
-            pollLights(); // Start polling
+            });
         });
     </script>
 </body>

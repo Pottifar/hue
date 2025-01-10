@@ -95,6 +95,46 @@ def get_lights():
             lights_data.append({'name': name, 'state': state, 'rgb': rgb})
     return jsonify({'lights': lights_data})
 
+@app.route('/toggle-room-lights', methods=['POST'])
+def toggle_room_lights():
+    data = request.get_json()
+    room_name = data['room_name']
+
+    # Find the room and determine the toggle action
+    groups = b.get_group()
+    lights_updated = []
+    room_lights = []
+    for group in groups.values():
+        if group['name'] == room_name:
+            for light_id in group['lights']:
+                light = b.get_light(int(light_id))
+                room_lights.append({'id': int(light_id), 'state': light['state']})
+
+            # Determine if any lights are on
+            any_lights_on = any(light['state']['on'] for light in room_lights)
+            new_state = not any_lights_on  # If any light is on, turn all off; else, turn all on
+
+            # Apply the new state to all lights in the room
+            for light in room_lights:
+                light_id = light['id']  # Use the valid light ID directly
+                b.set_light(light_id, 'on', new_state)
+
+                # Get updated state and RGB
+                updated_light = b.get_light(light_id)
+                brightness = updated_light['state'].get('bri', 0)
+                colortemp = updated_light['state'].get('ct', 153)
+                rgb = convert_color(colortemp, brightness) if new_state else (0, 0, 0)
+
+                lights_updated.append({
+                    'name': updated_light['name'],
+                    'state': updated_light['state'],
+                    'rgb': rgb
+                })
+
+    return jsonify({'success': True, 'lights_updated': lights_updated})
+
+
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
